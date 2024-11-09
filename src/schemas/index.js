@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const productMongoose = () => {
   mongoose
     .connect(
-      "mongodb+srv://practice_sparta_user:<db_password>@express-mongo.06gd2ya.mongodb.net/?retryWrites=true&w=majority&appName=express-mongo",
+      "mongodb+srv://practice_sparta_user:aaaa4321@express-mongo.06gd2ya.mongodb.net/?retryWrites=true&w=majority&appName=express-mongo",
       {
         dbName: "solo_Practice_Product",
       }

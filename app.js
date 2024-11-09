@@ -1,5 +1,5 @@
 import express from "express";
-import productMongoose from "./src/schemas";
+import productMongoose from "./src/schemas/index.js";
 
 const app = express();
 const PORT = 3000;
