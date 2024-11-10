@@ -1,5 +1,6 @@
 import express from "express";
 import productMongoose from "./src/schemas/index.js";
+import ProductRouter from "./src/routers/products.router.js";
 
 const app = express();
 const PORT = 3000;
@@ -22,7 +23,9 @@ router.get("/", (req, res) => {
 });
 
 // 주소창에 /api가 적혀있는 순가 router로 연결될거고 연결을 확인하는 순간에는 16번 코드가 작동할 것이다.
-app.use("/api", router);
+app.use("/api", [router, ProductRouter]);
+
+// 에러처리 미들웨어 작성
 
 app.listen(PORT, () => {
   console.log(PORT, "포드 번호로 서버가 연결 되었습니다.");

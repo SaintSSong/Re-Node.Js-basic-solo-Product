@@ -8,5 +8,8 @@
     "express": "^4.21.1",
     "mongoose": "^8.8.1",
     "prettier": "^3.3.3"
+  },
+  "scripts": {
+    "start": "nodemon ./app.js"
   }
 }
