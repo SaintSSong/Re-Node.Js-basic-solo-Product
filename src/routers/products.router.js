@@ -1,5 +1,7 @@
 import express from "express";
 import productSchema from "../schemas/product.schema.js";
+import { createProductValidate } from "../middlewarmies/creat-Product.middlewarmies.js";
+import { passwordProductValidate } from "../middlewarmies/password-Product.middlewarmies.js";
 
 // 왜 router를 써야할까?
 // URl을 타고 와서 들어와야하기 떄문에 쓰는거다.
@@ -11,7 +13,7 @@ const router = express.Router();
  */
 
 // 상품 생성하기
-router.post("/product", async (req, res, next) => {
+router.post("/product", createProductValidate, async (req, res, next) => {
   try {
     const { name, description, manager, password } = req.body;
 
@@ -51,130 +53,158 @@ router.post("/product", async (req, res, next) => {
 
 // 상품 조회하기
 router.get("/product", async (req, res, next) => {
-  const product = await productSchema.find().sort({ createdAt: "desc" }).exec();
+  try {
+    const product = await productSchema
+      .find()
+      .sort({ createdAt: "desc" })
+      .exec();
 
-  if (product.length <= 0) {
+    if (product.length <= 0) {
+      return res
+        .status(200)
+        .json({ status: 200, product, message: "상품이 아무것도 없습니다." });
+    }
+
     return res
-      .status(200)
-      .json({ status: 200, message: "상품이 아무것도 없습니다.", product });
+      .status(201)
+      .json({ product, message: "성공적으로 불러내었습니다." });
+  } catch (error) {
+    next(error);
   }
-
-  return res
-    .status(201)
-    .json({ product, message: "성공적으로 불러내었습니다." });
 });
 
 // 상품 상세조회하기
 router.get("/product/:productID", async (req, res, next) => {
-  //   - **상품 ID**를 **Path Parameter(`req.params`)**로 전달 받습니다.
-  const { productID } = req.params;
+  try {
+    //   - **상품 ID**를 **Path Parameter(`req.params`)**로 전달 받습니다.
+    const { productID } = req.params;
 
-  // - **상품 ID, 상품명, 상품 설명, 담당자, 상품 상태, 생성 일시, 수정 일시** 를 조회합니다.
-  const existedProduct = await productSchema.findById(productID).exec();
+    // - **상품 ID, 상품명, 상품 설명, 담당자, 상품 상태, 생성 일시, 수정 일시** 를 조회합니다.
+    const existedProduct = await productSchema.findById(productID).exec();
 
-  // 조회된 상품이 없으면 에러를 뱉어야한다.
-  if (!existedProduct) {
-    return res.status(400).json({
-      status: 400,
-      message: "존재하지 않는 상품입니다.",
+    // 조회된 상품이 없으면 에러를 뱉어야한다.
+    if (!existedProduct) {
+      return res.status(400).json({
+        status: 400,
+        message: "존재하지 않는 상품입니다.",
+      });
+    }
+
+    return res.status(200).json({
+      status: 200,
+      message: "상품 조회에 성공했습니다.",
+      existedProduct,
     });
+  } catch (error) {
+    next(error);
   }
-
-  return res.status(200).json({
-    status: 200,
-    message: "상품 조회에 성공했습니다.",
-    existedProduct,
-  });
 });
 
 // 상품 수정하기
-router.put("/product/:productID", async (req, res, next) => {
-  // - **상품 ID**를 **Path Parameter(`req.params`)**로 전달 받습니다.
-  const { productID } = req.params;
+router.put(
+  "/product/:productID",
+  passwordProductValidate,
+  async (req, res, next) => {
+    try {
+      // - **상품 ID**를 **Path Parameter(`req.params`)**로 전달 받습니다.
+      const { productID } = req.params;
 
-  // - **상품명, 상품 설명, 담당자, 상품 상태, 비밀번호**를 **Request body(`req.body`)**로 전달 받습니다.
-  const { name, description, manager, password, status } = req.body;
+      // - **상품명, 상품 설명, 담당자, 상품 상태, 비밀번호**를 **Request body(`req.body`)**로 전달 받습니다.
+      const { name, description, manager, password, status } = req.body;
 
-  // - **수정할 상품과 비밀번호 일치 여부를 확인**한 후, 동일할 때만 상품이 **수정**되어야 합니다.
-  const rightProduct = await productSchema
-    .findById(productID, { password: true })
-    .exec();
+      // - **수정할 상품과 비밀번호 일치 여부를 확인**한 후, 동일할 때만 상품이 **수정**되어야 합니다.
+      const rightProduct = await productSchema
+        .findById(productID, { password: true })
+        .exec();
 
-  if (!rightProduct) {
-    return res
-      .status(400)
-      .json({ status: 400, message: "존재하지 않는 상품입니다." });
+      if (!rightProduct) {
+        return res
+          .status(400)
+          .json({ status: 400, message: "존재하지 않는 상품입니다." });
+      }
+
+      //    일치하지 않을 경우, **“비밀번호가 일치하지 않습니다.”** 메세지를 반환합니다.
+      let rightPassword = password === rightProduct.password;
+
+      if (!rightPassword) {
+        return res
+          .status(400)
+          .json({ status: 400, message: "올바르지 않는 비빌번호입니다." });
+      }
+
+      // 상품 수정하기
+      const updateProduct = {
+        name: name,
+        description: description,
+        manager: manager,
+        status: status,
+      };
+
+      let newProduct = await productSchema.findByIdAndUpdate(
+        productID,
+        updateProduct
+      );
+
+      return res.status(201).json({
+        status: 201,
+        message: "상품 수정이 완료되었습니다.",
+        newProduct: newProduct,
+      });
+    } catch (error) {
+      next(error);
+    }
   }
-
-  //    일치하지 않을 경우, **“비밀번호가 일치하지 않습니다.”** 메세지를 반환합니다.
-  let rightPassword = password === rightProduct.password;
-
-  if (!rightPassword) {
-    return res
-      .status(400)
-      .json({ status: 400, message: "올바르지 않는 비빌번호입니다." });
-  }
-
-  // 상품 수정하기
-  const updateProduct = {
-    name: name,
-    description: description,
-    manager: manager,
-    status: status,
-  };
-
-  let newProduct = await productSchema.findByIdAndUpdate(
-    productID,
-    updateProduct
-  );
-
-  return res.status(201).json({
-    status: 201,
-    message: "상품 수정이 완료되었습니다.",
-    newProduct: newProduct,
-  });
-});
+);
 
 // 상품 삭제하기
-router.delete("/product/:productID", async (req, res, next) => {
-  //- **상품 ID**를 **Path Parameter(`req.params`)**로 전달 받습니다.
-  const { productID } = req.params;
+router.delete(
+  "/product/:productID",
+  passwordProductValidate,
+  async (req, res, next) => {
+    try {
+      //- **상품 ID**를 **Path Parameter(`req.params`)**로 전달 받습니다.
+      const { productID } = req.params;
 
-  //- **비밀번호**를 **Request body(`req.body`)**로 전달 받습니다.
-  const { password } = req.body;
+      //- **비밀번호**를 **Request body(`req.body`)**로 전달 받습니다.
+      const { password } = req.body;
 
-  // 존재하는 상품인지 조회합니다.
-  const existedProduct = await productSchema
-    .findById(productID, { password: true })
-    .exec();
+      // 존재하는 상품인지 조회합니다.
+      const existedProduct = await productSchema
+        .findById(productID, { password: true })
+        .exec();
 
-  // 조회된 상품이 없으면 에러를 뱉어야한다.
-  if (!existedProduct) {
-    return res.status(400).json({
-      status: 400,
-      message: "존재하지 않는 상품입니다.",
-    });
+      // 조회된 상품이 없으면 에러를 뱉어야한다.
+      if (!existedProduct) {
+        return res.status(400).json({
+          status: 400,
+          message: "존재하지 않는 상품입니다.",
+        });
+      }
+
+      //- **삭제할 상품과 비밀번호 일치 여부를 확인**한 후, 동일할 때만 글이 **삭제**되어야 합니다. 일치하지 않을 경우, **“비밀번호가 일치하지 않습니다.”** 메세지를 반환합니다.
+      const rightPassword = password === existedProduct.password;
+
+      console.log("password", password);
+      console.log("existedProduct.password", existedProduct.password);
+      console.log("rightPassword", rightPassword);
+      if (!rightPassword) {
+        return res
+          .status(400)
+          .json({ status: 400, message: "비밀번호가 일치하지 않습니다." });
+      }
+
+      // 상품이 존재하면 삭제처리
+      let Product = await productSchema.findByIdAndDelete(productID).exec();
+
+      return res.status(200).json({
+        status: 200,
+        message: "상품이 성공적으로 삭제되었습니다.",
+        Product,
+      });
+    } catch (error) {
+      next(error);
+    }
   }
+);
 
-  //- **삭제할 상품과 비밀번호 일치 여부를 확인**한 후, 동일할 때만 글이 **삭제**되어야 합니다. 일치하지 않을 경우, **“비밀번호가 일치하지 않습니다.”** 메세지를 반환합니다.
-  const rightPassword = password === existedProduct.password;
-
-  console.log("password", password);
-  console.log("existedProduct.password", existedProduct.password);
-  console.log("rightPassword", rightPassword);
-  if (!rightPassword) {
-    return res
-      .status(400)
-      .json({ status: 400, message: "비밀번호가 일치하지 않습니다." });
-  }
-
-  // 상품이 존재하면 삭제처리
-  let Product = await productSchema.findByIdAndDelete(productID).exec();
-
-  return res.status(200).json({
-    status: 200,
-    message: "상품이 성공적으로 삭제되었습니다.",
-    Product,
-  });
-});
 export default router;
