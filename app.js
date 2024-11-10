@@ -1,6 +1,7 @@
 import express from "express";
 import productMongoose from "./src/schemas/index.js";
 import ProductRouter from "./src/routers/products.router.js";
+import errorHandlerMiddleware from "./src/middlewarmies/error-handler.middleware.js";
 
 const app = express();
 const PORT = 3000;
@@ -26,6 +27,7 @@ router.get("/", (req, res) => {
 app.use("/api", [router, ProductRouter]);
 
 // 에러처리 미들웨어 작성
+app.use(errorHandlerMiddleware);
 
 app.listen(PORT, () => {
   console.log(PORT, "포드 번호로 서버가 연결 되었습니다.");
