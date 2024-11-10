@@ -53,6 +53,12 @@ router.post("/product", async (req, res, next) => {
 router.get("/product", async (req, res, next) => {
   const product = await productSchema.find().sort({ createdAt: "desc" }).exec();
 
+  if (product.length <= 0) {
+    return res
+      .status(200)
+      .json({ status: 200, message: "상품이 아무것도 없습니다.", product });
+  }
+
   return res
     .status(201)
     .json({ product, message: "성공적으로 불러내었습니다." });
