@@ -1,7 +1,8 @@
 import express from "express";
 import productSchema from "../schemas/product.schema.js";
-import { createProductValidate } from "../middlewarmies/creat-Product.middlewarmies.js";
-import { passwordProductValidate } from "../middlewarmies/password-Product.middlewarmies.js";
+import { createProductValidator } from "../middlewarmies/validators/create-Product.validator.middlewarmies.js";
+import { deleteProductValidator } from "../middlewarmies/validators/delete-Product.validator.middlewarmies.js";
+import { updateProductValidator } from "../middlewarmies/validators/update-Product.validator.middlewarmies.js";
 
 // 왜 router를 써야할까?
 // URl을 타고 와서 들어와야하기 떄문에 쓰는거다.
@@ -13,7 +14,7 @@ const router = express.Router();
  */
 
 // 상품 생성하기
-router.post("/product", createProductValidate, async (req, res, next) => {
+router.post("/product", createProductValidator, async (req, res, next) => {
   try {
     const { name, description, manager, password } = req.body;
 
@@ -103,7 +104,7 @@ router.get("/product/:productID", async (req, res, next) => {
 // 상품 수정하기
 router.put(
   "/product/:productID",
-  passwordProductValidate,
+  updateProductValidator,
   async (req, res, next) => {
     try {
       // - **상품 ID**를 **Path Parameter(`req.params`)**로 전달 받습니다.
@@ -150,6 +151,7 @@ router.put(
         message: "상품 수정이 완료되었습니다.",
         newProduct: newProduct,
       });
+      next();
     } catch (error) {
       next(error);
     }
@@ -159,7 +161,7 @@ router.put(
 // 상품 삭제하기
 router.delete(
   "/product/:productID",
-  passwordProductValidate,
+  deleteProductValidator,
   async (req, res, next) => {
     try {
       //- **상품 ID**를 **Path Parameter(`req.params`)**로 전달 받습니다.

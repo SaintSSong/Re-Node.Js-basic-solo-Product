@@ -1,6 +1,6 @@
 import Joi from "joi";
 
-export const passwordProductValidate = async (req, res, next) => {
+export const deleteProductValidator = async (req, res, next) => {
   try {
     const joiSchema = Joi.object({
       password: Joi.string().required().messages({
@@ -10,6 +10,7 @@ export const passwordProductValidate = async (req, res, next) => {
     });
 
     await joiSchema.validateAsync(req.body);
+    next();
   } catch (err) {
     next(err);
   }
